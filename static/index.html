@@ -122,7 +122,7 @@ function paintMatrix(res,gaps,filled){
 $("go").onclick=async()=>{
   $("err").textContent="";$("go").disabled=true;$("go").textContent="Muse Spark is reading your ads…";
   try{
-    first=await post("/api/analyze",{images:ads});
+    first=await post("/api/analyze",{images:ads});first.gaps.forEach(g=>g.name=g.name||g.concept_name||g.angle);
     const k=first.concepts.length;
     $("big").innerHTML=`${ads.length}<span class="arrow">→</span><span class="k">${k}</span><small>ads you made → concepts Meta sees</small>`;
     $("verdict").textContent=first.verdict;$("meter").style.width=first.diversity_score+"%";$("divtxt").textContent=`Concept diversity ${first.diversity_score}/100`;
