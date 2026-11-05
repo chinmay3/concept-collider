@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Concept Collider</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0d12;--panel:#141821;--line:#232a36;--fg:#e8ecf3;--mut:#8b95a7;--acc:#4f8cff;--good:#2fd47a;--bad:#ff5d6c;--warn:#ffb648}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Inter,system-ui,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 16px 80px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+h1{margin:0;font-size:32px;font-weight:800;letter-spacing:-.02em}h1 span{color:var(--acc)}
+.sub{color:var(--mut);margin-top:4px;max-width:640px}
+.models{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;color:var(--mut)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+button,.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 18px;font:600 14px Inter;cursor:pointer}
+button.ghost,.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+button:disabled{opacity:.45;cursor:default}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+.panel h2{margin:0 0 14px;font-size:16px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.ad{position:relative;border-radius:12px;overflow:hidden;border:3px solid transparent;background:#000}
+.ad img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.ad .tag{position:absolute;left:6px;bottom:6px;right:6px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ad.new::after{content:"NEW";position:absolute;top:6px;right:6px;background:var(--good);color:#000;font:800 10px Inter;padding:2px 6px;border-radius:5px}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+.big{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.03em;white-space:nowrap}
+.big .arrow{color:var(--mut);font-weight:400;margin:0 10px}.big .k{color:var(--bad)}.big .k.good{color:var(--good)}
+.big small{display:block;font-size:13px;font-weight:500;color:var(--mut);letter-spacing:0;margin-top:8px}
+.verdict{font-size:18px;font-weight:500}
+.meter{height:10px;background:#0b0d12;border-radius:99px;overflow:hidden;margin-top:12px}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--bad),var(--warn),var(--good));transition:width 1s}
+.concepts{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.concept{border:1px solid var(--line);border-left:6px solid;border-radius:10px;padding:10px 12px}
+.concept b{display:block}.concept span{color:var(--mut);font-size:13px}
+.mx{overflow-x:auto}table{border-collapse:separate;border-spacing:4px;width:100%;min-width:720px}
+th{font-size:11px;color:var(--mut);font-weight:600;text-align:left;padding:4px}
+td{height:44px;border-radius:8px;background:#0e1118;text-align:center;font-weight:700;font-size:13px}
+td.on{background:#2a3550}td.gap{background:transparent;border:2px dashed var(--good);color:var(--good);font-size:11px}td.filled{background:var(--good);color:#000}
+.gaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.gapc{border:1px dashed var(--good);border-radius:10px;padding:12px}.gapc b{color:var(--good)}.gapc p{margin:6px 0 0;font-size:13px;color:var(--mut)}
+.steps{display:flex;flex-direction:column;gap:6px;font-size:14px}.step{color:var(--mut)}.step.on{color:var(--fg)}.step.done{color:var(--good)}
+.step.on::before{content:"◌ ";animation:spin 1s linear infinite;display:inline-block}.step.done::before{content:"✓ "}.step.wait::before{content:"· "}
+@keyframes spin{to{transform:rotate(360deg)}}
+.seg{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.seg img{height:150px;border-radius:10px;border:2px solid var(--acc);background:#fff}
+.hidden{display:none}.err{color:var(--bad)}
+@media(max-width:640px){.hero{grid-template-columns:1fr}.big{font-size:44px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Concept <span>Collider</span></h1>
+    <div class="sub">Meta's Andromeda treats look-alike ads as one ad. See how many concepts Meta actually sees in your ad set, then let an agent fill the gaps with genuinely new ones.</div>
+  </div>
+  <div class="models"><span class="chip">Muse Spark 1.3 · vision</span><span class="chip">SAM 3.1 · segment</span><span class="chip">Muse Image · generate</span></div>
+</header>
+
+<div class="bar">
+  <button id="demo">Load demo brand (NORTHBREW)</button>
+  <label class="btn ghost">Upload your ads<input id="file" type="file" accept="image/*" multiple hidden></label>
+  <button id="go" class="ghost" disabled>Collide ▸</button>
+</div>
+
+<div class="panel" id="setP"><h2>Your ad set</h2><div class="grid" id="set"><span class="sub">Load the demo or upload 6–20 ad images.</span></div></div>
+
+<div class="panel hidden" id="scoreP">
+  <div class="hero">
+    <div class="big" id="big"></div>
+    <div><div class="verdict" id="verdict"></div><div class="meter"><i id="meter" style="width:0"></i></div><div class="sub" id="divtxt"></div></div>
+  </div>
+</div>
+<div class="panel hidden" id="conP"><h2>Concepts Andromeda sees</h2><div class="concepts" id="concepts"></div></div>
+<div class="panel hidden" id="mxP"><h2>Angle × format coverage</h2><div class="mx" id="mx"></div></div>
+<div class="panel hidden" id="gapP"><h2>Missing concepts, picked by the agent</h2><div class="gaps" id="gaps"></div>
+  <div style="margin-top:16px"><button id="fill">Fill the gaps ▸</button></div></div>
+<div class="panel hidden" id="runP"><h2>Agent run</h2><div class="steps" id="steps"></div>
+  <div class="seg hidden" id="segbox" style="margin-top:14px"><img id="segimg"><div class="sub">SAM 3.1 isolated <b id="segname"></b> from the hero ad. Every new concept is generated from this exact product.</div></div></div>
+<div class="panel hidden" id="newP"><h2>New concepts</h2><div class="grid" id="newgrid"></div></div>
+<div class="err" id="err"></div>
+</div>
+
+<script>
+const COLORS=["#4f8cff","#ff5d6c","#ffb648","#b57bff","#2fd47a","#3dd6d0","#ff7ac6","#c0ca33","#8d6e63","#90a4ae","#f06292","#7986cb"];
+const $=id=>document.getElementById(id);
+let ads=[],first=null,last=null,newAds=[];
+const toData=src=>fetch(src).then(r=>r.blob()).then(b=>new Promise(res=>{const f=new FileReader();f.onload=()=>res(f.result);f.readAsDataURL(b)}));
+function renderSet(){ $("set").innerHTML=ads.map((a,i)=>`<div class="ad" id="ad${i}"><img src="${a}"><div class="tag">Ad ${i+1}</div></div>`).join(""); $("go").disabled=!ads.length;}
+$("demo").onclick=async()=>{const urls=await (await fetch("/api/seed")).json();ads=await Promise.all(urls.map(toData));renderSet();};
+$("file").onchange=async e=>{ads=await Promise.all([...e.target.files].map(f=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)})));renderSet();};
+async function post(url,body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+function steps(list,active){ $("steps").innerHTML=list.map((s,i)=>`<div class="step ${i<active?'done':i==active?'on':'wait'}">${s}</div>`).join("");}
+
+function paintConcepts(res,all,isNew){
+  const owner={};res.concepts.forEach((c,ci)=>c.ad_indices.forEach(i=>owner[i]=ci));
+  const tiles=all.map((src,i)=>{const ci=owner[i]??0,c=COLORS[ci%COLORS.length];return `<div class="ad ${isNew&&i>=ads.length?'new':''}" style="border-color:${c}"><img src="${src}"><div class="tag" style="color:${c}">${res.concepts[ci]?.name||''}</div></div>`}).join("");
+  $("concepts").innerHTML=res.concepts.map((c,ci)=>`<div class="concept" style="border-left-color:${COLORS[ci%COLORS.length]}"><b>${c.name} · ${c.ad_indices.length} ad${c.ad_indices.length>1?'s':''}</b><span>${c.why_same}</span></div>`).join("");
+  return tiles;
+}
+function paintMatrix(res,gaps,filled){
+  const used={};res.ads.forEach(a=>{const k=a.angle+"|"+a.format;used[k]=(used[k]||0)+1});
+  const gk=Object.fromEntries((gaps||[]).map(g=>[g.angle+"|"+g.format,g.name]));
+  let h=`<table><tr><th></th>${res.formats.map(f=>`<th>${f}</th>`).join("")}</tr>`;
+  for(const a of res.angles){h+=`<tr><th>${a}</th>`;for(const f of res.formats){const k=a+"|"+f;
+    if(filled&&gk[k])h+=`<td class="filled">NEW</td>`;else if(used[k])h+=`<td class="on">${used[k]}</td>`;else if(gk[k])h+=`<td class="gap">GAP</td>`;else h+=`<td></td>`;}h+="</tr>";}
+  $("mx").innerHTML=h+"</table>";
+}
+$("go").onclick=async()=>{
+  $("err").textContent="";$("go").disabled=true;$("go").textContent="Muse Spark is reading your ads…";
+  try{
+    first=await post("/api/analyze",{images:ads});
+    const k=first.concepts.length;
+    $("big").innerHTML=`${ads.length}<span class="arrow">→</span><span class="k">${k}</span><small>ads you made → concepts Meta sees</small>`;
+    $("verdict").textContent=first.verdict;$("meter").style.width=first.diversity_score+"%";$("divtxt").textContent=`Concept diversity ${first.diversity_score}/100`;
+    $("set").innerHTML=paintConcepts(first,ads,false);paintMatrix(first,first.gaps,false);
+    $("gaps").innerHTML=first.gaps.map(g=>`<div class="gapc"><b>${g.name}</b><div class="sub" style="font-size:12px">${g.angle} · ${g.format}</div><p>${g.scene}</p><p><i>${g.why}</i></p></div>`).join("");
+    ["scoreP","conP","mxP","gapP"].forEach(id=>$(id).classList.remove("hidden"));
+  }catch(e){$("err").textContent=e.message}
+  $("go").disabled=false;$("go").textContent="Collide ▸";
+};
+$("fill").onclick=async()=>{
+  $("fill").disabled=true;$("runP").classList.remove("hidden");$("err").textContent="";
+  const S=[`SAM 3.1: segmenting “${first.product}” from the hero ad`,`Muse Image: generating ${first.gaps.length} new concepts in parallel`,"Muse Spark: re-scoring the full set the way Andromeda would"];
+  steps(S,0);
+  try{
+    const sizes=first.concepts.map(c=>c.ad_indices.length);const hero=ads[first.concepts[sizes.indexOf(Math.max(...sizes))].ad_indices[0]];
+    setTimeout(()=>steps(S,1),6000);
+    const r=await post("/api/fill",{hero,product:first.product,brand:first.brand,gaps:first.gaps});
+    $("segimg").src=r.product;$("segname").textContent=first.product;$("segbox").classList.remove("hidden");
+    newAds=r.ads.filter(a=>a.image);steps(S,2);
+    $("newP").classList.remove("hidden");
+    $("newgrid").innerHTML=newAds.map(a=>`<div class="ad new" style="border-color:var(--good)"><img src="${a.image}"><div class="tag">${a.name}</div></div>`).join("");
+    const all=ads.concat(newAds.map(a=>a.image));
+    last=await post("/api/analyze",{images:all,gaps:3});steps(S,3);
+    const k0=first.concepts.length,k1=last.concepts.length;
+    $("big").innerHTML=`<span class="k">${k0}</span><span class="arrow">→</span><span class="k good">${k1}</span><small>concepts Meta sees, before → after</small>`;
+    $("verdict").textContent=last.verdict;$("meter").style.width=last.diversity_score+"%";
+    $("divtxt").textContent=`Concept diversity ${first.diversity_score} → ${last.diversity_score}/100`;
+    $("set").innerHTML=paintConcepts(last,all,true);$("setP").querySelector("h2").textContent="Your ad set + new concepts";
+    paintMatrix(first,first.gaps,true);
+    window.scrollTo({top:0,behavior:"smooth"});
+  }catch(e){$("err").textContent=e.message}
+  $("fill").disabled=false;
+};
+</script>
+</body>
+</html>
