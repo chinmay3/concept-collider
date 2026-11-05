@@ -119,12 +119,37 @@ class FillReq(BaseModel):
     product: str
     brand: str
     gaps: list[dict]
+    existing: list[str] = []
+    variants: int = 3
 
 
-def gen_gap(product_url, brand, product, g):
+TWISTS = ["", " Push it further: a bolder, more unexpected composition.",
+          " Use a different camera angle and a contrasting color palette."]
+
+JUDGE_PROMPT = """You are Meta's Andromeda retrieval system plus a strict brand creative director.
+The first {n} images are the brand's EXISTING ads. After them come CANDIDATE new ads, each labelled with an id like g0v1
+(gap 0, variant 1). Score every candidate:
+- novelty 0-100: how different a creative concept it is from ALL existing ads (near-duplicates of existing ads score low)
+- brand_fit 0-100: product matches the brand's real product, headline legible, looks like a professional ad
+Then pick exactly ONE winner per gap (g0, g1, ...), maximising novelty + brand_fit.
+Return ONLY JSON: {{"candidates": [{{"id": "g0v0", "novelty": 0, "brand_fit": 0, "note": "<max 10 words>"}}], "winners": {{"g0": "g0v1"}}}}"""
+
+
+def judge(existing, cands):
+    content = [{"type": "text", "text": JUDGE_PROMPT.format(n=len(existing))}]
+    for i, u in enumerate(existing):
+        content += [{"type": "text", "text": f"Existing ad {i}:"},
+                    {"type": "image_url", "image_url": {"url": to_jpeg_dataurl(from_dataurl(u), 384)}}]
+    for c in cands:
+        content += [{"type": "text", "text": f"Candidate {c['id']}:"},
+                    {"type": "image_url", "image_url": {"url": to_jpeg_dataurl(from_dataurl(c['image']), 512)}}]
+    return chat_json(content)
+
+
+def gen_gap(product_url, brand, product, g, twist=""):
     prompt = (f"Square 1:1 social media ad for the brand {brand}. Use the EXACT {product} from the reference image "
               f"(same shape, colors, logo). Creative angle: {g['angle']}. Visual format: {g['format']}. "
-              f"Scene: {g['scene']} Clean, scroll-stopping, professional ad photography, one short legible headline.")
+              f"Scene: {g['scene']} Clean, scroll-stopping, professional ad photography, one short legible headline.{twist}")
     r = requests.post(f"{API}/images/edits", headers=H, timeout=240, json={
         "model": "muse-image-1.0", "prompt": prompt, "n": 1, "images": [{"image_url": product_url}]})
     if r.status_code != 200:
@@ -148,9 +173,31 @@ def fill(req: FillReq):
     else:
         crop = hero
     product_url = to_jpeg_dataurl(crop, 768)
-    with ThreadPoolExecutor(len(req.gaps)) as ex:
-        results = list(ex.map(lambda g: gen_gap(product_url, req.brand, req.product, g), req.gaps))
-    return {"product": product_url, "box": box, "ads": results}
+    jobs = [(gi, vi) for gi in range(len(req.gaps)) for vi in range(req.variants)]
+    with ThreadPoolExecutor(len(jobs)) as ex:
+        out = list(ex.map(lambda j: gen_gap(product_url, req.brand, req.product, req.gaps[j[0]],
+                                            TWISTS[j[1] % len(TWISTS)]), jobs))
+    cands = [{"id": f"g{gi}v{vi}", "gap": gi, **o} for (gi, vi), o in zip(jobs, out) if o.get("image")]
+    if not cands:
+        raise HTTPException(502, "Muse Image returned no candidates")
+    try:
+        verdict = judge(req.existing, cands)
+    except Exception:
+        verdict = {"candidates": [], "winners": {}}
+    scores = {c["id"]: c for c in verdict.get("candidates", [])}
+    for c in cands:
+        s = scores.get(c["id"], {})
+        c.update(novelty=s.get("novelty", 0), brand_fit=s.get("brand_fit", 0), note=s.get("note", ""))
+    winners = []
+    for gi in range(len(req.gaps)):
+        pool = [c for c in cands if c["gap"] == gi]
+        if not pool:
+            continue
+        wid = verdict.get("winners", {}).get(f"g{gi}")
+        w = next((c for c in pool if c["id"] == wid), max(pool, key=lambda c: c["novelty"] + c["brand_fit"]))
+        w["winner"] = True
+        winners.append(w)
+    return {"product": product_url, "box": box, "ads": winners, "candidates": cands}
 
 
 @app.get("/api/seed")

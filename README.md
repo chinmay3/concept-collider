@@ -12,7 +12,7 @@ Concept Collider is an agent that:
 2. **Groups** the ads into the concepts Andromeda would see, gives a diversity score and maps angle × format coverage.
 3. **Finds gaps**: picks 4 angle × format combinations nobody has tried that are most likely to reach new audiences.
 4. **Segments** the product out of the hero ad with **SAM 3.1** (Responses API, text prompt → box).
-5. **Generates** one new ad per gap with **Muse Image** (`/images/edits`, using the segmented product as the reference image).
+5. **Evolves** 3 candidate ads per gap with **Muse Image** (`/images/edits`, segmented product as reference): 12 images in parallel. Muse Spark then runs a tournament, scoring every candidate on novelty vs. the existing set and brand fit, and keeps one winner per gap.
 6. **Checks its own work**: re-scores the full set with Muse Spark to confirm the new ads really are new concepts (e.g. 3 → 8).
 
 Demo result on the fictional brand NORTHBREW: **9 ads → 3 concepts, diversity 18/100**, then 4 generated gap concepts take it to **8 concepts, diversity 28/100**.

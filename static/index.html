@@ -42,6 +42,7 @@ td.on{background:#2a3550}td.gap{background:transparent;border:2px dashed var(--g
 .step.on::before{content:"◌ ";animation:spin 1s linear infinite;display:inline-block}.step.done::before{content:"✓ "}.step.wait::before{content:"· "}
 @keyframes spin{to{transform:rotate(360deg)}}
 .seg{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.seg img{height:150px;border-radius:10px;border:2px solid var(--acc);background:#fff}
+.ad.lose{opacity:.35;filter:grayscale(.6)}.ad .sc{position:absolute;top:6px;left:6px;font:700 10px Inter;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.8)}
 .hidden{display:none}.err{color:var(--bad)}
 @media(max-width:640px){.hero{grid-template-columns:1fr}.big{font-size:44px}}
 </style>
@@ -76,7 +77,8 @@ td.on{background:#2a3550}td.gap{background:transparent;border:2px dashed var(--g
   <div style="margin-top:16px"><button id="fill">Fill the gaps ▸</button></div></div>
 <div class="panel hidden" id="runP"><h2>Agent run</h2><div class="steps" id="steps"></div>
   <div class="seg hidden" id="segbox" style="margin-top:14px"><img id="segimg"><div class="sub">SAM 3.1 isolated <b id="segname"></b> from the hero ad. Every new concept is generated from this exact product.</div></div></div>
-<div class="panel hidden" id="newP"><h2>New concepts</h2><div class="grid" id="newgrid"></div></div>
+<div class="panel hidden" id="tourP"><h2>Concept evolution · tournament</h2><div class="sub" id="toursub" style="margin-bottom:12px"></div><div class="grid" id="tourgrid"></div></div>
+<div class="panel hidden" id="newP"><h2>Winning new concepts</h2><div class="grid" id="newgrid"></div></div>
 <div class="err" id="err"></div>
 </div>
 
@@ -120,14 +122,17 @@ $("go").onclick=async()=>{
 };
 $("fill").onclick=async()=>{
   $("fill").disabled=true;$("runP").classList.remove("hidden");$("err").textContent="";
-  const S=[`SAM 3.1: segmenting “${first.product}” from the hero ad`,`Muse Image: generating ${first.gaps.length} new concepts in parallel`,"Muse Spark: re-scoring the full set the way Andromeda would"];
+  const S=[`SAM 3.1: segmenting “${first.product}” from the hero ad`,`Muse Image: evolving ${first.gaps.length*3} candidates (3 per gap) in parallel → Muse Spark judges novelty + brand fit`,"Muse Spark: re-scoring the full set the way Andromeda would"];
   steps(S,0);
   try{
     const sizes=first.concepts.map(c=>c.ad_indices.length);const hero=ads[first.concepts[sizes.indexOf(Math.max(...sizes))].ad_indices[0]];
     setTimeout(()=>steps(S,1),6000);
-    const r=await post("/api/fill",{hero,product:first.product,brand:first.brand,gaps:first.gaps});
+    const r=await post("/api/fill",{hero,product:first.product,brand:first.brand,gaps:first.gaps,existing:ads,variants:3});
     $("segimg").src=r.product;$("segname").textContent=first.product;$("segbox").classList.remove("hidden");
     newAds=r.ads.filter(a=>a.image);steps(S,2);
+    $("tourP").classList.remove("hidden");
+    $("toursub").textContent=`${r.candidates.length} candidates generated, ${newAds.length} survived. Losers were too close to existing ads or off-brand.`;
+    $("tourgrid").innerHTML=r.candidates.map(c=>`<div class="ad ${c.winner?'':'lose'}" style="border-color:${c.winner?'var(--good)':'transparent'}"><img src="${c.image}"><div class="sc">N ${c.novelty} · B ${c.brand_fit}</div><div class="tag">${c.winner?'🏆 ':''}${c.name}</div></div>`).join("");
     $("newP").classList.remove("hidden");
     $("newgrid").innerHTML=newAds.map(a=>`<div class="ad new" style="border-color:var(--good)"><img src="${a.image}"><div class="tag">${a.name}</div></div>`).join("");
     const all=ads.concat(newAds.map(a=>a.image));
